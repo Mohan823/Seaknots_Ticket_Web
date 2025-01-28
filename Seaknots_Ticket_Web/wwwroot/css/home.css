@@ -1,0 +1,61 @@
+﻿.navbar {
+    box-shadow: rgba(180,180,180,0.3) 0 0 20px;
+}
+
+
+.cards-container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+}
+
+.card-item {
+    color: white;
+    transition: all 0.3s
+}
+
+.card-item {
+    /*    display: inline-block;*/
+    /*    width: 100px;*/
+    /*    aspect-ratio: 1;*/
+    background: linear-gradient(135deg,#1f005c, #5b0060, #870160, #ac255e, #ca485c, #e16b5c, #f39060, #ffb56b);
+    --m: conic-gradient(from 45deg at left, #0000,#000 1deg 89deg,#0000 90deg) left /51% 8px repeat-y, conic-gradient(from -135deg at right, #0000,#000 1deg 89deg,#0000 90deg) right/51% 8px repeat-y;
+    -webkit-mask: var(--m);
+    mask: var(--m);
+    color: white;
+}
+
+    .card-item:hover {
+        transform: scale(1.05);
+        -moz-box-shadow: inset -1rem -1rem 1rem #ac255e;
+        -webkit-box-shadow: inset -1rem -1rem 1rem #ac255e;
+        box-shadow: inset -1rem -1rem 1rem #ac255e;
+    }
+
+.card-cut-left {
+    position: absolute;
+    left: 0;
+    top: 0;
+    transform: translate(-50%, -50%);
+    width: 1rem;
+    height: 1rem;
+    border-radius: 100vmax;
+    border-right: 1px solid #aaa;
+    background-color: #f7f7f7;
+}
+
+.divider {
+    border-bottom: 3px dashed #f7f7f7;
+}
+
+.card-cut-right {
+    position: absolute;
+    right: 0;
+    top: 0;
+    transform: translate(50%, -50%);
+    width: 1rem;
+    height: 1rem;
+    border-radius: 100vmax;
+    border-left: 1px solid #aaa;
+    background-color: #f7f7f7;
+}

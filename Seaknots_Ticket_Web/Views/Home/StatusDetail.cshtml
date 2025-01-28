@@ -1,0 +1,197 @@
+﻿@model List<Jira>;
+@{
+    ViewData["Title"] = "Get Data of Jira status";
+}
+
+@section Styles {
+    <link href="https://cdn.datatables.net/v/bs5/jszip-3.10.1/dt-1.13.8/b-2.4.2/b-colvis-2.4.2/b-html5-2.4.2/b-print-2.4.2/fc-4.3.0/fh-3.4.0/kt-2.11.0/r-2.5.0/sc-2.3.0/datatables.min.css" rel="stylesheet">
+    <link href="~/css/status-detail.css" rel="stylesheet" type="text/css" />
+    <style>
+        #myTable {
+            transition: all 0.3s ease-in;
+        }
+
+        .filters-container {
+            transition: all 0.3s ease-in;
+        }
+    </style>
+}
+
+<div>
+
+    <div class="text-end">
+        <a asp-action="index" asp-controller="home" class="btn btn-prime-gradient home-url px-4 mb-3">
+            <i class="fa-solid fa-house pe-2"></i>Home
+        </a>
+    </div>
+
+    <div class="filters-container" style="display:none">
+        <img src="/images/People celebrating Pongal festival-pana.png" class="filters-celebrate-image" />
+        <fieldset class="mb-4 position-relative p-4">
+            <legend class="filter-heading">
+                <i class="fa fa-solid fa-filter"></i>
+                Filters
+            </legend>
+
+            <div class="row g-3" id="filter-items">
+                <div class="col-md-4">
+                    <label for="projectFilter" class="form-label">Project</label>
+                    <input id="projectFilter" type="text" class="form-control" />
+                </div>
+                <div class="col-md-4">
+                    <label for="moduleNameFilter" class="form-label">Module Name</label>
+                    <input id="moduleNameFilter" type="text" class="form-control" />
+                </div>
+                <div class="col-md-4">
+                    <label for="moduleBranchFilter" class="form-label">Module Branch</label>
+                    <input id="moduleBranchFilter" type="text" class="form-control" />
+                </div>
+            </div>
+        </fieldset>
+    </div>
+
+    <div id="loading-spinner">
+        <div class="text-center">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    </div>
+
+    <table id="myTable" class="table-striped display nowrap overflow-hidden" style="display:none">
+        <thead>
+            <tr>
+                @foreach (var prop in typeof(Jira).GetProperties())
+                {
+                    <th class="bg-prime">@prop.Name</th>
+                }
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var jiraItem in Model.OrderByDescending(u => u.Aging))
+            {
+                <tr>
+                    @foreach (var prop in typeof(Jira).GetProperties())
+                    {
+                        <td>@prop.GetValue(jiraItem)</td>
+                    }
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+
+@section Scripts {
+
+    <script>
+
+        // $(document).ready(function () {
+
+            // Get the query string from the URL
+            const queryString = window.location.search;
+
+            // Parse the query string to get the parameters
+            const urlParams = new URLSearchParams(queryString);
+
+            // Get the value of the "status" parameter
+            const category = urlParams.get('category');
+            const filterby = urlParams.get('filterby');
+
+            // data tables
+            var table = $('#myTable').DataTable({
+                autoWidth: true,
+                deferRender: true,
+                processing: true, // Shows a "Processing..." indicator
+                serverSide: false, // Set this to true if you're using server-side processing
+                dom: "<'row'<'col-sm-12'l>>" +
+                    "<'row'<'col-sm-12 col-md-6'B><'col-sm-12 col-md-6'f>>" +
+                    "<'row'<'col-sm-12'tr>>" +
+                    "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+                buttons: [
+                    {
+                        extend: 'excelHtml5',
+                        title: `Filtered Data by ${category} - ${filterby}`,
+                        customize: function (xlsx) {
+                            var sheet = xlsx.xl.worksheets['sheet1.xml']; // Update sheet name if needed
+
+
+                            // Loop through all cells to add a black border
+                            $('row c', sheet).each(function () {
+                                $(this).attr('s', '25'); // Apply style '25' to all cells (black border)
+                            });
+
+                            $('row:nth-child(2) c', sheet).attr('s', '22'); // Apply style '25' to the second row
+                            // Define the custom style
+                            var styleXML = '<style><font ss:Color="#0000FF" /></style>'; // Blue color (Hex: #0000FF)
+
+                            // Add the custom style to the styles in the workbook
+                            $('style', sheet).append(styleXML);
+                        }
+                    },
+                    'colvis'
+                ],
+
+                columnDefs: [
+                    {
+                        targets: "_all",
+                        createdCell: function (td, cellData, rowData, row, col) {
+                            $(td).css({
+                                'padding-block': '5px',
+                                'padding-inline': '1rem',
+                                'max-width': '500px', // Ensures a maximum width
+                                'overflow': 'hidden', // Hides overflowing content
+                                'text-overflow': 'ellipsis', // Adds ellipsis for overflow
+                                // 'white-space': 'nowrap' // Prevents wrapping
+                            });
+                        },
+                        // width: "200px" // Ensures the column width is set to 200px
+                    }
+                ],
+                initComplete: function () {
+                    $('#loading-spinner').hide()
+                    $('#myTable').fadeIn();
+                    $('.filters-container').fadeIn();
+
+                }
+            }).columns.adjust();
+
+            // Elispsys break function
+            $('tbody').on('click', 'tr', function () {
+                var data = table.row(this).data();
+                var $tds = $(this).find('td');
+                $.each(data, function (index, element) {
+                    element = element.replace(/(.{1,75})([ \n\t]|$)/g, "$1<br>"); // length controls the length of expanded.
+                    $tds.eq(index).html(element);
+                    console.log("fata" + $tds.eq(index).html())
+                })
+            });
+
+            // Selection Function
+            // $('#myTable tbody').on('click', 'tr', function () {
+            //     if ($(this).hasClass('selected')) {
+            //         $(this).removeClass('selected');
+            //     } else {
+            //         table.$('tr.selected').removeClass('selected');
+            //         $(this).addClass('selected');
+            //     }
+            // });
+
+            // Adding classes and styles
+            $("thead th:first-child").addClass("sticky-first-col");
+            $('#myTable').wrap('<div class="wrapper"></div>');
+            $('#myTable_filter input[type=search]').css({ 'z-index': 3, 'position': 'relative' })
+
+            // Filters
+            $("#filter-items").on('keyup', function () {
+                table
+                    .columns(4).search($("#projectFilter").val())
+                    .columns(5).search($("#moduleNameFilter").val())
+                    .columns(6).search($("#moduleBranchFilter").val())
+                    .draw();
+            })
+        // })
+
+
+    </script>
+}

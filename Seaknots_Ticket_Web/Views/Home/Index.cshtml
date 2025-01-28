@@ -1,0 +1,116 @@
+﻿@model List<JiraCount>;
+@{
+    ViewData["Title"] = "Home Page";
+}
+
+@section Styles {
+    <link href="~/css/home.css" rel="stylesheet" type="text/css" />
+}
+<div>
+    <ul class="d-flex justify-content-center gap-3 list-unstyled">
+        <li>
+            <a asp-action="index" asp-controller="home" asp-route-category="name" class="btn btn-prime-gradient px-4 mb-3">
+                <i class="fa-solid fa-user pe-2"></i>By Person
+            </a>
+        </li>
+        <li>
+            <a asp-action="index" asp-controller="home" asp-route-category="status" class="btn btn-prime-gradient px-4 mb-3">
+                <i class="fa-solid fa-comment-dots pe-2"></i>By Status
+            </a>
+        </li>
+        <li>
+            <a asp-action="index" asp-controller="home" asp-route-category="project" class="btn btn-prime-gradient px-4 mb-3">
+                <i class="fa-solid fa-book pe-2"></i>By Project
+            </a>
+        </li>
+    </ul>
+</div>
+
+<div class="d-grid">
+    <div class="row">
+        <div class="col-md-6">
+            <div class="cards-container">
+                @foreach (var item in Model)
+                {
+                    <a asp-action="StatusDetail" asp-route-filterby="@item.Status" , asp-route-category="@item.Category" class="card-item rounded-1 text-center text-decoration-none border">
+                        <div class="p-2 fs-6 fw-bold">@item.Status.ToUpper()</div>
+                        <div class="divider position-relative">
+                            <div class="card-cut-left"></div>
+                            <div class="card-cut-right"></div>
+                        </div>
+                        <div class="p-3 fw-bold fs-2">@item.Count</div>
+                    </a>
+                }
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <canvas id="myChart"></canvas>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/lib/chart-js/chart.js"></script>
+
+    <script>
+        const ctx = document.getElementById('myChart');
+
+        const labelData = [@{
+            var labelList = "";
+            foreach (var item in Model)
+            {
+                if (item.Status.ToUpper() == "DONE") continue;
+                labelList += "'" + item.Status + "',";
+            }
+            @Html.Raw(labelList.TrimEnd(','))
+        }];
+
+        const countData = [@{
+            var countList = "";
+            foreach (var item in Model)
+            {
+                if (item.Status.ToUpper() == "DONE") continue;
+                countList += item.Count + ",";
+            }
+            @Html.Raw(countList.TrimEnd(','))
+        }]
+
+
+        const data = {
+            labels: labelData,
+            datasets: [{
+                label: 'Count',
+                data: countData,
+                backgroundColor: [
+                    'rgb(255, 99, 132)',
+                    'rgb(54, 162, 235)',
+                    'rgb(255, 205, 86)',
+                    'rgb(153, 102, 204)', // Soft Purple
+                    'rgb(75, 192, 192)',  // Turquoise
+                    'rgb(255, 159, 64)',  // Vibrant Orange
+                    'rgb(255, 102, 102)', // Salmon Pink
+                    'rgb(75, 191, 107)',  // Muted Green
+                    'rgb(54, 162, 235)',  // Same color for consistency
+                    'rgb(255, 205, 86)',  // Same color for consistency
+                    'rgb(207, 114, 255)', // Light Lavender
+                    'rgb(255, 87, 87)',   // Bright Red
+                    'rgb(54, 235, 162)',  // Mint Green
+                    'rgb(255, 184, 108)', // Peachy
+                    'rgb(102, 102, 255)', // Soft Blue
+                    'rgb(255, 159, 180)', // Coral
+                    'rgb(0, 204, 153)',   // Teal
+                    'rgb(255, 153, 0)',   // Gold
+                ],
+                hoverOffset: 4
+            }]
+        };
+
+        const config = {
+            type: 'polarArea',
+            data: data,
+        };
+
+        new Chart(ctx, config);
+    </script>
+}
