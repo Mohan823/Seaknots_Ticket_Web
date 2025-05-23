@@ -106,3 +106,8 @@ tr > *:first-child, sticky-first-col {
     border-radius: 10px;
     /*    outline: 1px solid slategrey;*/
 }
+
+
+.navbar {
+    box-shadow: rgba(180,180,180,0.3) 0 0 20px;
+}

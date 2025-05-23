@@ -27,7 +27,7 @@ BEGIN
 	('IBGURU', 13),
 	('kamesh', 14),
 	('NWKamesh', 15),
-	('marimuthu', 16),
+	('Muthu', 16),
 	('NWMuthu', 17),
 	('mukesh', 18),
 	('Chandru', 19),
@@ -51,7 +51,7 @@ BEGIN
 	INNER JOIN #TEMP B ON B.userName = A.AssignedEmployee
 	WHERE 
 		IsActive = 1 
-		AND Status IN ('TO DO', 'RESOLVED', 'IN REVIEW', 'Sent for Approval', 'REOPENED', 'IN PROGRESS')
+		AND Status IN ('TO DO', 'RESOLVED', 'IN REVIEW', 'Sent for Approval', 'REOPENED', 'IN PROGRESS', 'Testing', 'NICE TO HAVE')
 		GROUP BY A.AssignedEmployee, B.OrderId 
 		ORDER BY B.OrderId ASC
 
@@ -62,12 +62,12 @@ ELSE BEGIN
 	FROM Jiras 
 	WHERE 
 		IsActive = 1 
-		AND Status IN (''TO DO'', ''RESOLVED'', ''IN REVIEW'', ''Sent for Approval'', ''REOPENED'', ''IN PROGRESS'')
+		AND Status IN (''TO DO'', ''RESOLVED'', ''IN REVIEW'', ''Sent for Approval'', ''REOPENED'', ''IN PROGRESS'', ''Testing'', ''NICE TO HAVE'')
 		GROUP BY ' + QUOTENAME(@Type)
 
 	EXEC sp_executesql @SQL;
 END
 DROP TABLE #TEMP;
 END
-GO
-sp_GetSTSDashboardCount 'Project'
+--GO
+--sp_GetSTSDashboardCount 'AssignedEmployee'

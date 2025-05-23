@@ -4,6 +4,7 @@
     {
         public int? JiraId { get; set; }
         public int? Aging { get; set; }
+        public string? PlannedDate { get; set; }
         public string? Status { get; set; }
         public string? IssueType { get; set; }
         public string? Project { get; set; }

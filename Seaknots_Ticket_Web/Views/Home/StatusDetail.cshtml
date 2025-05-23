@@ -1,4 +1,4 @@
-﻿@model List<Jira>;
+﻿@model StatusDetailVM;
 @{
     ViewData["Title"] = "Get Data of Jira status";
 }
@@ -14,6 +14,66 @@
         .filters-container {
             transition: all 0.3s ease-in;
         }
+
+
+        .cards-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, 150px);
+            margin-block: 1rem;
+            gap: 1rem;
+        }
+
+        .card-item {
+            color: white;
+            transition: all 0.3s
+        }
+
+        .card-item {
+            /*    display: inline-block;*/
+            /*    width: 100px;*/
+            /*    aspect-ratio: 1;*/
+            background: linear-gradient(135deg,#1f005c, #5b0060, #870160, #ac255e, #ca485c, #e16b5c, #f39060, #ffb56b);
+            --m: conic-gradient(from 45deg at left, #0000,#000 1deg 89deg,#0000 90deg) left /51% 8px repeat-y, conic-gradient(from -135deg at right, #0000,#000 1deg 89deg,#0000 90deg) right/51% 8px repeat-y;
+            -webkit-mask: var(--m);
+            mask: var(--m);
+            color: white;
+        }
+
+            .card-item:hover {
+                transform: scale(1.05);
+                -moz-box-shadow: inset -1rem -1rem 1rem #ac255e;
+                -webkit-box-shadow: inset -1rem -1rem 1rem #ac255e;
+                box-shadow: inset -1rem -1rem 1rem #ac255e;
+            }
+
+        .card-cut-left {
+            position: absolute;
+            left: 0;
+            top: 0;
+            transform: translate(-50%, -50%);
+            width: 1rem;
+            height: 1rem;
+            border-radius: 100vmax;
+            border-right: 1px solid #aaa;
+            background-color: #f7f7f7;
+        }
+
+        .divider {
+            border-bottom: 3px dashed #f7f7f7;
+        }
+
+        .card-cut-right {
+            position: absolute;
+            right: 0;
+            top: 0;
+            transform: translate(50%, -50%);
+            width: 1rem;
+            height: 1rem;
+            border-radius: 100vmax;
+            border-left: 1px solid #aaa;
+            background-color: #f7f7f7;
+        }
+
     </style>
 }
 
@@ -24,6 +84,23 @@
             <i class="fa-solid fa-house pe-2"></i>Home
         </a>
     </div>
+
+    <div>
+        <div class="cards-container">
+            @foreach (var item in Model.JiraCount)
+            {
+                <a asp-action="StatusCardDetail" asp-route-filterby="@item.Status" , asp-route-category="@item.Category" asp-route-subCategory="@item.SubCategory" class="card-item rounded-1 text-center text-decoration-none border">
+                    <div class="p-2 fw-bold" style="font-size:0.9rem">@item.Status.ToUpper()</div>
+                    <div class="divider position-relative">
+                        <div class="card-cut-left"></div>
+                        <div class="card-cut-right"></div>
+                    </div>
+                    <div class="p-3 fw-bold fs-2">@item.Count</div>
+                </a>
+            }
+        </div>
+    </div>
+
 
     <div class="filters-container" style="display:none">
         <img src="/images/People celebrating Pongal festival-pana.png" class="filters-celebrate-image" />
@@ -46,8 +123,14 @@
                     <label for="moduleBranchFilter" class="form-label">Module Branch</label>
                     <input id="moduleBranchFilter" type="text" class="form-control" />
                 </div>
+                <div class="col-md-4">
+                    <button class="btn btn-success" type="button" id="todayBtn">Today</button>
+                </div>
             </div>
         </fieldset>
+    </div>
+
+    <div>
     </div>
 
     <div id="loading-spinner">
@@ -68,7 +151,7 @@
             </tr>
         </thead>
         <tbody>
-            @foreach (var jiraItem in Model.OrderByDescending(u => u.Aging))
+            @foreach (var jiraItem in Model.Jiras.OrderByDescending(u => u.Aging))
             {
                 <tr>
                     @foreach (var prop in typeof(Jira).GetProperties())
@@ -79,6 +162,10 @@
             }
         </tbody>
     </table>
+    @if (Model.DailyChart.Count() > 0)
+    {
+    <div id="container" style="width: 100%; height: 400px;margin-block:2rem;display:none;"></div>
+    }
 </div>
 
 
@@ -88,110 +175,151 @@
 
         // $(document).ready(function () {
 
-            // Get the query string from the URL
-            const queryString = window.location.search;
+        // Get the query string from the URL
+        const queryString = window.location.search;
 
-            // Parse the query string to get the parameters
-            const urlParams = new URLSearchParams(queryString);
+        // Parse the query string to get the parameters
+        const urlParams = new URLSearchParams(queryString);
 
-            // Get the value of the "status" parameter
-            const category = urlParams.get('category');
-            const filterby = urlParams.get('filterby');
+        // Get the value of the "status" parameter
+        const category = urlParams.get('category');
+        const filterby = urlParams.get('filterby');
 
-            // data tables
-            var table = $('#myTable').DataTable({
-                autoWidth: true,
-                deferRender: true,
-                processing: true, // Shows a "Processing..." indicator
-                serverSide: false, // Set this to true if you're using server-side processing
-                dom: "<'row'<'col-sm-12'l>>" +
-                    "<'row'<'col-sm-12 col-md-6'B><'col-sm-12 col-md-6'f>>" +
-                    "<'row'<'col-sm-12'tr>>" +
-                    "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
-                buttons: [
-                    {
-                        extend: 'excelHtml5',
-                        title: `Filtered Data by ${category} - ${filterby}`,
-                        customize: function (xlsx) {
-                            var sheet = xlsx.xl.worksheets['sheet1.xml']; // Update sheet name if needed
+        // data tables
+        var table = $('#myTable').DataTable({
+            autoWidth: true,
+            deferRender: true,
+            processing: true, // Shows a "Processing..." indicator
+            serverSide: false, // Set this to true if you're using server-side processing
+            dom: "<'row'<'col-sm-12'l>>" +
+                "<'row'<'col-sm-12 col-md-6'B><'col-sm-12 col-md-6'f>>" +
+                "<'row'<'col-sm-12'tr>>" +
+                "<'row'<'col-sm-12 col-md-5'i><'col-sm-12 col-md-7'p>>",
+            buttons: [
+                {
+                    extend: 'excelHtml5',
+                    title: `Filtered Data by ${category} - ${filterby}`,
+                    customize: function (xlsx) {
+                        var sheet = xlsx.xl.worksheets['sheet1.xml']; // Update sheet name if needed
 
 
-                            // Loop through all cells to add a black border
-                            $('row c', sheet).each(function () {
-                                $(this).attr('s', '25'); // Apply style '25' to all cells (black border)
-                            });
+                        // Loop through all cells to add a black border
+                        $('row c', sheet).each(function () {
+                            $(this).attr('s', '25'); // Apply style '25' to all cells (black border)
+                        });
 
-                            $('row:nth-child(2) c', sheet).attr('s', '22'); // Apply style '25' to the second row
-                            // Define the custom style
-                            var styleXML = '<style><font ss:Color="#0000FF" /></style>'; // Blue color (Hex: #0000FF)
+                        $('row:nth-child(2) c', sheet).attr('s', '22'); // Apply style '25' to the second row
+                        // Define the custom style
+                        var styleXML = '<style><font ss:Color="#0000FF" /></style>'; // Blue color (Hex: #0000FF)
 
-                            // Add the custom style to the styles in the workbook
-                            $('style', sheet).append(styleXML);
-                        }
-                    },
-                    'colvis'
-                ],
-
-                columnDefs: [
-                    {
-                        targets: "_all",
-                        createdCell: function (td, cellData, rowData, row, col) {
-                            $(td).css({
-                                'padding-block': '5px',
-                                'padding-inline': '1rem',
-                                'max-width': '500px', // Ensures a maximum width
-                                'overflow': 'hidden', // Hides overflowing content
-                                'text-overflow': 'ellipsis', // Adds ellipsis for overflow
-                                // 'white-space': 'nowrap' // Prevents wrapping
-                            });
-                        },
-                        // width: "200px" // Ensures the column width is set to 200px
+                        // Add the custom style to the styles in the workbook
+                        $('style', sheet).append(styleXML);
                     }
-                ],
-                initComplete: function () {
-                    $('#loading-spinner').hide()
-                    $('#myTable').fadeIn();
-                    $('.filters-container').fadeIn();
+                },
+                'colvis'
+            ],
 
+            columnDefs: [
+                {
+                    targets: "_all",
+                    createdCell: function (td, cellData, rowData, row, col) {
+                        $(td).css({
+                            'padding-block': '5px',
+                            'padding-inline': '1rem',
+                            'max-width': '500px', // Ensures a maximum width
+                            'overflow': 'hidden', // Hides overflowing content
+                            'text-overflow': 'ellipsis', // Adds ellipsis for overflow
+                            // 'white-space': 'nowrap' // Prevents wrapping
+                        });
+                    },
+                    // width: "200px" // Ensures the column width is set to 200px
                 }
-            }).columns.adjust();
+            ],
+            initComplete: function () {
+                $('#loading-spinner').hide()
+                $('#myTable').fadeIn();
+                $('.filters-container').fadeIn();
 
-            // Elispsys break function
-            $('tbody').on('click', 'tr', function () {
-                var data = table.row(this).data();
-                var $tds = $(this).find('td');
-                $.each(data, function (index, element) {
-                    element = element.replace(/(.{1,75})([ \n\t]|$)/g, "$1<br>"); // length controls the length of expanded.
-                    $tds.eq(index).html(element);
-                    console.log("fata" + $tds.eq(index).html())
-                })
-            });
+            }
+        }).columns.adjust();
 
-            // Selection Function
-            // $('#myTable tbody').on('click', 'tr', function () {
-            //     if ($(this).hasClass('selected')) {
-            //         $(this).removeClass('selected');
-            //     } else {
-            //         table.$('tr.selected').removeClass('selected');
-            //         $(this).addClass('selected');
-            //     }
-            // });
-
-            // Adding classes and styles
-            $("thead th:first-child").addClass("sticky-first-col");
-            $('#myTable').wrap('<div class="wrapper"></div>');
-            $('#myTable_filter input[type=search]').css({ 'z-index': 3, 'position': 'relative' })
-
-            // Filters
-            $("#filter-items").on('keyup', function () {
-                table
-                    .columns(4).search($("#projectFilter").val())
-                    .columns(5).search($("#moduleNameFilter").val())
-                    .columns(6).search($("#moduleBranchFilter").val())
-                    .draw();
+        // Elispsys break function
+        $('tbody').on('click', 'tr', function () {
+            var data = table.row(this).data();
+            var $tds = $(this).find('td');
+            $.each(data, function (index, element) {
+                element = element.replace(/(.{1,75})([ \n\t]|$)/g, "$1<br>"); // length controls the length of expanded.
+                $tds.eq(index).html(element);
+                console.log("fata" + $tds.eq(index).html())
             })
+        });
+
+        // Selection Function
+        // $('#myTable tbody').on('click', 'tr', function () {
+        //     if ($(this).hasClass('selected')) {
+        //         $(this).removeClass('selected');
+        //     } else {
+        //         table.$('tr.selected').removeClass('selected');
+        //         $(this).addClass('selected');
+        //     }
+        // });
+
+        // Adding classes and styles
+        $("thead th:first-child").addClass("sticky-first-col");
+        $('#myTable').wrap('<div class="wrapper"></div>');
+        $('#myTable_filter input[type=search]').css({ 'z-index': 3, 'position': 'relative' })
+
+        // Filters
+        $("#filter-items").on('keyup', function () {
+            table
+                .columns(5).search($("#projectFilter").val())
+                .columns(6).search($("#moduleNameFilter").val())
+                .columns(7).search($("#moduleBranchFilter").val())
+                .draw();
+        })
+        $("#todayBtn").on("click", function () {
+            date = moment().format("DD/MM/yyyy");
+            table
+                .columns(2).search(date)
+                .columns(5).search($("#projectFilter").val())
+                .columns(6).search($("#moduleNameFilter").val())
+                .columns(7).search($("#moduleBranchFilter").val())
+                .draw();
+        })
+
         // })
 
 
+    </script>
+    <script>
+        const days = [@Html.Raw(string.Join(", ", Model.DailyChart.Select(x => $"'{x.Status}'")))];
+        const counts = [@string.Join(", ", Model.DailyChart.Select(x => x.Count.ToString()))];
+
+        Highcharts.chart('container', {
+            chart: {
+                type: 'line'
+            },
+            title: {
+                text: "This Month’s STS Trend (Daily Breakdown)"
+            },
+            xAxis: {
+                categories: days,
+                title: {
+                    text: 'Day of Month'
+                }
+            },
+            yAxis: {
+                title: {
+                    text: 'Count'
+                }
+            },
+            series: [{
+                name: 'STS Count',
+                data: counts
+            }],
+            credits: {
+                enabled: false
+            }
+        })
     </script>
 }
